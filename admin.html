@@ -121,6 +121,35 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
 .gate-card input{text-align:center;font-size:1.1rem;letter-spacing:2px;margin-bottom:12px;}
 .linkbtn{background:none;border:none;color:var(--green);font-family:'Kanit',sans-serif;font-size:.85rem;cursor:pointer;margin-top:14px;text-decoration:underline;}
 #app{display:none;}
+/* change-password modal (redesigned) */
+.pwd-modal .sheet{max-width:400px;padding:0;overflow:hidden;animation:pwdIn .28s cubic-bezier(.2,.9,.3,1);}
+@keyframes pwdIn{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}
+.pwd-head{position:relative;text-align:center;padding:28px 24px 20px;
+  background:radial-gradient(120% 110% at 50% 0,#e9f3e7 0%,transparent 72%);}
+.pwd-x{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);
+  background:#fff;cursor:pointer;color:var(--ink-soft);font-size:1rem;line-height:1;display:grid;place-items:center;transition:.15s;}
+.pwd-x:hover{border-color:var(--green-line);color:var(--green);}
+.pwd-icon{width:62px;height:62px;border-radius:19px;margin:0 auto 13px;display:grid;place-items:center;
+  background:linear-gradient(145deg,var(--green),#3f8a50);box-shadow:0 10px 22px rgba(47,107,61,.32);}
+.pwd-icon svg{width:29px;height:29px;stroke:#fff;fill:none;stroke-width:2;}
+.pwd-head h3{font-family:'Kanit',sans-serif;font-weight:600;font-size:1.22rem;color:var(--ink);}
+.pwd-head p{font-size:.85rem;color:var(--ink-soft);margin-top:4px;}
+.pwd-body{padding:4px 24px 24px;}
+.pwd-input{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);
+  border-radius:13px;padding:0 12px;margin-bottom:11px;transition:.15s;}
+.pwd-input:focus-within{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft);}
+.pwd-input .ic{width:19px;height:19px;stroke:var(--ink-soft);fill:none;stroke-width:1.8;flex:0 0 auto;}
+.pwd-input:focus-within .ic{stroke:var(--green);}
+.pwd-input input{flex:1;border:none;outline:none;background:none;padding:13px 0;font-family:'Sarabun',sans-serif;font-size:1rem;color:var(--ink);}
+.pwd-input input:focus{box-shadow:none;border:none;}
+.pwd-eye{border:none;background:none;cursor:pointer;padding:5px;display:grid;place-items:center;color:#b6c0b3;flex:0 0 auto;transition:.15s;}
+.pwd-eye svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;}
+.pwd-eye:hover{color:var(--green);}
+.pwd-eye.on{color:var(--green);}
+.pwd-msg{font-size:.85rem;min-height:1.2em;margin:6px 2px 12px;text-align:center;color:var(--ink-soft);}
+.pwd-actions{display:flex;gap:10px;}
+.pwd-actions .btn{width:auto;flex:1;}
+.pwd-actions .btn.primary{flex:1.7;}
 </style></head><body>
 
 <!-- ====== หน้าใส่รหัสผ่าน ====== -->
@@ -149,6 +178,7 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
 </div></header>
 
 <div class="wrap">
+  <div style="margin:0 0 14px"><input type="search" id="searchHouse" placeholder="🔍 ค้นหาบ้านเลขที่ หรือ ชื่อ"></div>
   <div id="board"><div class="spin"></div></div>
 </div>
 </div>
@@ -163,13 +193,35 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
 </div></div>
 
 <!-- change-password modal -->
-<div class="modal" id="pwdModal"><div class="sheet" style="max-width:420px">
-  <div class="sheet-top"><h3>เปลี่ยนรหัสผ่าน</h3><button class="close" id="pwdClose">✕</button></div>
-  <div class="field"><label>รหัสผ่านเดิม</label><input type="password" id="curPass" autocomplete="current-password"></div>
-  <div class="field"><label>รหัสผ่านใหม่</label><input type="password" id="newPass" autocomplete="new-password"></div>
-  <div class="field"><label>ยืนยันรหัสผ่านใหม่</label><input type="password" id="newPass2" autocomplete="new-password"></div>
-  <div class="row"><button class="btn" id="pwdCancel">ยกเลิก</button><button class="btn primary" id="pwdSave">บันทึก</button></div>
-  <div id="pwdMsg" style="font-size:.85rem;margin-top:10px;min-height:1em"></div>
+<div class="modal pwd-modal" id="pwdModal"><div class="sheet">
+  <div class="pwd-head">
+    <button class="pwd-x" id="pwdClose" aria-label="ปิด">✕</button>
+    <div class="pwd-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+    <h3>เปลี่ยนรหัสผ่าน</h3>
+    <p>ตั้งรหัสผ่านใหม่สำหรับเข้าหน้าแอดมิน</p>
+  </div>
+  <div class="pwd-body">
+    <label class="pwd-input">
+      <svg class="ic" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <input type="password" id="curPass" placeholder="รหัสผ่านเดิม" autocomplete="current-password">
+      <button type="button" class="pwd-eye" data-for="curPass" aria-label="แสดง/ซ่อนรหัส"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+    </label>
+    <label class="pwd-input">
+      <svg class="ic" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 21 2M16 7l3 3"/></svg>
+      <input type="password" id="newPass" placeholder="รหัสผ่านใหม่" autocomplete="new-password">
+      <button type="button" class="pwd-eye" data-for="newPass" aria-label="แสดง/ซ่อนรหัส"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+    </label>
+    <label class="pwd-input">
+      <svg class="ic" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 21 2M16 7l3 3"/></svg>
+      <input type="password" id="newPass2" placeholder="ยืนยันรหัสผ่านใหม่" autocomplete="new-password">
+      <button type="button" class="pwd-eye" data-for="newPass2" aria-label="แสดง/ซ่อนรหัส"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+    </label>
+    <div id="pwdMsg" class="pwd-msg"></div>
+    <div class="pwd-actions">
+      <button class="btn" id="pwdCancel">ยกเลิก</button>
+      <button class="btn primary" id="pwdSave">บันทึกรหัสผ่านใหม่</button>
+    </div>
+  </div>
 </div></div>
 
 <div class="toast" id="toast"></div>
@@ -236,6 +288,7 @@ async function loadBoard(){
         <span class="badge">${h.slips>0?('จ่ายแล้ว'+(h.slips>1?(' '+h.slips):'')):'ยังไม่จ่าย'}</span>
         <span class="info"><span class="h">บ้านเลขที่ ${h.house}</span><span class="n">${h.name||'-'}</span></span>
       </button>`).join('')+'</div>';
+    applyHouseFilter();
   }catch(e){board.innerHTML='<div class="empty">โหลดไม่สำเร็จ<br>'+e.message+'</div>';}
 }
 
@@ -271,6 +324,25 @@ modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('s
 
 document.getElementById('refreshBtn').onclick=loadBoard;
 
+// ====== ค้นหาบ้านเลขที่ / ชื่อ ======
+function applyHouseFilter(){
+  const q=(document.getElementById('searchHouse').value||'').trim().toLowerCase();
+  const cards=board.querySelectorAll('.house');
+  let shown=0;
+  cards.forEach(c=>{
+    const hay=(c.dataset.house+' '+(c.dataset.name||'')).toLowerCase();
+    const ok=!q||hay.includes(q);
+    c.style.display=ok?'':'none';
+    if(ok)shown++;
+  });
+  let note=document.getElementById('noFound');
+  if(cards.length&&shown===0){
+    if(!note){note=document.createElement('div');note.id='noFound';note.className='empty';
+      note.textContent='ไม่พบบ้านที่ค้นหา';board.appendChild(note);}
+  } else if(note){note.remove();}
+}
+document.getElementById('searchHouse').addEventListener('input',applyHouseFilter);
+
 // ====== ระบบล็อกอิน ======
 const gate=document.getElementById('gate'),app=document.getElementById('app');
 function getToken(){return sessionStorage.getItem('rp4_admin_token')||'';}
@@ -295,12 +367,16 @@ document.getElementById('gatePass').addEventListener('keydown',e=>{if(e.key==='E
 // ====== modal เปลี่ยนรหัสผ่าน ======
 const pwdModal=document.getElementById('pwdModal');
 function openPwd(){
-  document.getElementById('curPass').value='';
-  document.getElementById('newPass').value='';
-  document.getElementById('newPass2').value='';
-  document.getElementById('pwdMsg').textContent='';
+  ['curPass','newPass','newPass2'].forEach(id=>{const i=document.getElementById(id);i.value='';i.type='password';});
+  document.querySelectorAll('.pwd-eye').forEach(b=>b.classList.remove('on'));
+  const m=document.getElementById('pwdMsg');m.textContent='';m.style.color='';
   pwdModal.classList.add('show');
 }
+document.querySelectorAll('.pwd-eye').forEach(btn=>btn.onclick=()=>{
+  const inp=document.getElementById(btn.dataset.for);
+  inp.type = inp.type==='password' ? 'text' : 'password';
+  btn.classList.toggle('on', inp.type==='text');
+});
 document.getElementById('pwdBtn').onclick=openPwd;
 document.getElementById('pwdClose').onclick=()=>pwdModal.classList.remove('show');
 document.getElementById('pwdCancel').onclick=()=>pwdModal.classList.remove('show');
