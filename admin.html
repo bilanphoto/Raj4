@@ -104,6 +104,8 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
 .sheet{background:var(--bg-1);width:100%;max-width:560px;max-height:86vh;overflow:auto;border-radius:20px 20px 0 0;
   padding:18px;box-shadow:0 -10px 40px rgba(0,0,0,.25);}
 @media(min-width:560px){.sheet{border-radius:20px;}}
+.modal.modal-center{align-items:center;}
+.modal.modal-center .sheet{border-radius:20px;width:calc(100% - 36px);max-width:360px;margin:auto;max-height:90vh;}
 .sheet-top{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
 .sheet-top h3{font-family:'Kanit',sans-serif;font-weight:600;font-size:1.15rem;}
 .sheet-top .close{margin-left:auto;width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer;
@@ -181,7 +183,10 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
 </div></header>
 
 <div class="wrap">
-  <div style="margin:0 0 14px"><input type="search" id="searchHouse" placeholder="🔍 ค้นหาบ้านเลขที่ หรือ ชื่อ"></div>
+  <div style="margin:0 0 14px;display:flex;gap:10px">
+    <input type="search" id="searchHouse" placeholder="🔍 ค้นหาบ้านเลขที่ หรือ ชื่อ" style="flex:1">
+    <button class="btn primary" id="addHouseBtn" style="width:auto;white-space:nowrap;padding:11px 16px">+ เพิ่มบ้าน</button>
+  </div>
   <div id="board"><div class="spin"></div></div>
 </div>
 </div>
@@ -190,8 +195,9 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
 <div class="modal" id="modal"><div class="sheet">
   <div class="sheet-top"><h3 id="mTitle">สลิป</h3><button class="close" id="mClose">✕</button></div>
   <div id="mBody"><div class="spin"></div></div>
-  <div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px">
-    <button class="btn" id="delHouse" style="border-color:#e0b4b0;color:#b3261e">🗑 ลบบ้านหลังนี้</button>
+  <div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px;display:flex;gap:10px">
+    <button class="btn" id="editHouseBtn" style="flex:1">✏️ แก้ไขข้อมูล</button>
+    <button class="btn" id="delHouse" style="flex:1;border-color:#e0b4b0;color:#b3261e">🗑 ลบบ้าน</button>
   </div>
 </div></div>
 
@@ -256,6 +262,35 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
   </div>
 </div></div>
 
+<!-- house add/edit modal -->
+<div class="modal pwd-modal" id="houseModal"><div class="sheet">
+  <div class="pwd-head">
+    <button class="pwd-x" id="houseClose" aria-label="ปิด">✕</button>
+    <div class="pwd-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg></div>
+    <h3 id="houseTitle">เพิ่มบ้านใหม่</h3>
+    <p id="houseSub">กรอกข้อมูลบ้าน</p>
+  </div>
+  <div class="pwd-body">
+    <label class="pwd-input">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>
+      <input type="text" id="hfHouse" placeholder="บ้านเลขที่ เช่น 105/4">
+    </label>
+    <label class="pwd-input">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <input type="text" id="hfName" placeholder="ชื่อ-นามสกุล">
+    </label>
+    <label class="pwd-input">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19l4-14M16 5l4 14M9 9h6M8 14h8"/></svg>
+      <input type="text" id="hfSoi" placeholder="ซอย (เว้นว่างได้)">
+    </label>
+    <div id="houseMsg" class="pwd-msg"></div>
+    <div class="pwd-actions">
+      <button class="btn" id="houseCancel">ยกเลิก</button>
+      <button class="btn primary" id="houseSave">บันทึก</button>
+    </div>
+  </div>
+</div></div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -304,7 +339,7 @@ function fileToDataUrl(file,maxW=1280,q=0.82){return new Promise((res,rej)=>{
   fr.onerror=rej;fr.readAsDataURL(file);});}
 
 const board=document.getElementById('board');
-let currentHouse=null, currentName=null;
+let currentHouse=null, currentName=null, currentSoi=null;
 
 async function loadBoard(){
   if(!API.url()){board.innerHTML='<div class="empty">ยังไม่ได้ใส่ URL ของ API ในโค้ด<br>(แก้ค่า API_URL ในไฟล์ admin.html)</div>';return;}
@@ -316,9 +351,9 @@ async function loadBoard(){
     document.getElementById('sub').textContent=(month?('เดือน '+month+' · '):'')+'ลงทะเบียน '+houses.length+' หลัง';
     if(!houses.length){board.innerHTML='<div class="empty">'+`<svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8"/></svg>`+'<div>ยังไม่มีผู้ใช้ลงทะเบียน</div></div>';return;}
     board.innerHTML='<div class="adm-grid">'+houses.map(h=>
-      `<button class="house ${h.slips>0?'has':''}" data-house="${h.house}" data-name="${(h.name||'').replace(/"/g,'&quot;')}">
+      `<button class="house ${h.slips>0?'has':''}" data-house="${h.house}" data-name="${(h.name||'').replace(/"/g,'&quot;')}" data-soi="${(h.soi||'').replace(/"/g,'&quot;')}">
         <span class="badge">${h.slips>0?('จ่ายแล้ว'+(h.slips>1?(' '+h.slips):'')):'ยังไม่จ่าย'}</span>
-        <span class="info"><span class="h">บ้านเลขที่ ${h.house}</span><span class="n">${h.name||'-'}</span></span>
+        <span class="info"><span class="h">บ้านเลขที่ ${h.house}</span><span class="n">${h.soi?('ซ.'+h.soi+' · '):''}${h.name||'-'}</span></span>
       </button>`).join('')+'</div>';
     applyHouseFilter();
   }catch(e){board.innerHTML='<div class="empty">โหลดไม่สำเร็จ<br>'+e.message+'</div>';}
@@ -328,7 +363,7 @@ async function loadBoard(){
 board.addEventListener('click',async e=>{
   const el=e.target.closest('.house');if(!el)return;
   const house=el.dataset.house,name=el.dataset.name;
-  currentHouse=house; currentName=name;
+  currentHouse=house; currentName=name; currentSoi=el.dataset.soi||'';
   openModal('บ้านเลขที่ '+house+(name?(' · '+name):''));
   try{
     const r=await API.get({action:'getSlips',house});
@@ -355,6 +390,44 @@ document.getElementById('delHouse').onclick=async()=>{
 modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('show');});
 
 document.getElementById('refreshBtn').onclick=loadBoard;
+
+// ====== เพิ่ม/แก้ไขบ้าน ======
+const houseModal=document.getElementById('houseModal');
+let houseMode='add', editingOldHouse=null;
+function openHouseForm(mode,data){
+  data=data||{};houseMode=mode;
+  document.getElementById('houseTitle').textContent = mode==='edit'?'แก้ไขข้อมูลบ้าน':'เพิ่มบ้านใหม่';
+  document.getElementById('houseSub').textContent = mode==='edit'?'แก้ไขชื่อ / ซอย / บ้านเลขที่':'กรอกข้อมูลบ้านที่ต้องการเพิ่ม';
+  document.getElementById('hfHouse').value=data.house||'';
+  document.getElementById('hfName').value=data.name||'';
+  document.getElementById('hfSoi').value=data.soi||'';
+  editingOldHouse = mode==='edit' ? (data.house||'') : null;
+  document.getElementById('houseMsg').textContent='';
+  houseModal.classList.add('show');
+}
+document.getElementById('addHouseBtn').onclick=()=>openHouseForm('add');
+document.getElementById('editHouseBtn').onclick=()=>openHouseForm('edit',{house:currentHouse,name:currentName,soi:currentSoi});
+document.getElementById('houseClose').onclick=()=>houseModal.classList.remove('show');
+document.getElementById('houseCancel').onclick=()=>houseModal.classList.remove('show');
+houseModal.addEventListener('click',e=>{if(e.target===houseModal)houseModal.classList.remove('show');});
+document.getElementById('houseSave').onclick=async()=>{
+  const house=document.getElementById('hfHouse').value.trim();
+  const name=document.getElementById('hfName').value.trim();
+  const soi=document.getElementById('hfSoi').value.trim();
+  const msg=document.getElementById('houseMsg');
+  if(!house||!name){msg.style.color='#b3261e';msg.textContent='กรอกบ้านเลขที่และชื่อให้ครบ';return;}
+  msg.style.color='var(--ink-soft)';msg.textContent='กำลังบันทึก...';
+  try{
+    const r = houseMode==='edit'
+      ? await API.get({action:'editHouse',oldHouse:editingOldHouse,house,name,soi,token:getToken()})
+      : await API.get({action:'addHouse',house,name,soi,token:getToken()});
+    if(r&&r.ok){msg.style.color='var(--green)';msg.textContent='บันทึกแล้ว ✓';
+      toast(houseMode==='edit'?'แก้ไขข้อมูลแล้ว':'เพิ่มบ้านแล้ว');
+      setTimeout(()=>{houseModal.classList.remove('show');modal.classList.remove('show');loadBoard();},700);}
+    else if(r&&/token|อนุญาต/.test(r.error||'')){houseModal.classList.remove('show');needRelogin();}
+    else{msg.style.color='#b3261e';msg.textContent=(r&&r.error)||'บันทึกไม่สำเร็จ';}
+  }catch(e){msg.style.color='#b3261e';msg.textContent='เชื่อมต่อไม่ได้: '+e.message;}
+};
 
 // ====== ตั้งค่า QR พร้อมเพย์ ======
 const qrCfgModal=document.getElementById('qrCfgModal');
