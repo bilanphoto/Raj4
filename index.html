@@ -104,6 +104,8 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
 .sheet{background:var(--bg-1);width:100%;max-width:560px;max-height:86vh;overflow:auto;border-radius:20px 20px 0 0;
   padding:18px;box-shadow:0 -10px 40px rgba(0,0,0,.25);}
 @media(min-width:560px){.sheet{border-radius:20px;}}
+.modal.modal-center{align-items:center;}
+.modal.modal-center .sheet{border-radius:20px;width:calc(100% - 36px);max-width:360px;margin:auto;max-height:90vh;}
 .sheet-top{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
 .sheet-top h3{font-family:'Kanit',sans-serif;font-weight:600;font-size:1.15rem;}
 .sheet-top .close{margin-left:auto;width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer;
@@ -169,7 +171,7 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
 </div>
 
 <!-- ====== QR พร้อมเพย์ modal ====== -->
-<div class="modal" id="qrModal"><div class="sheet" style="max-width:360px">
+<div class="modal modal-center" id="qrModal"><div class="sheet" style="max-width:360px">
   <div class="sheet-top"><h3>QR พร้อมเพย์</h3><button class="close" id="qrClose">✕</button></div>
   <div id="qrBody" style="text-align:center">
     <div class="spin"></div>
