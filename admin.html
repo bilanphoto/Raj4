@@ -169,7 +169,10 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
 <header><div class="head-inner">
   <div class="brand-mark"></div>
   <div class="brand-text"><h1>ราชพฤกษ์ 4 · แอดมิน</h1><p id="sub">บ้านที่ลงทะเบียนแล้ว</p></div>
-  <button class="gear" id="pwdBtn" aria-label="เปลี่ยนรหัสผ่าน" title="เปลี่ยนรหัสผ่าน">
+  <button class="gear" id="qrCfgBtn" aria-label="ตั้งค่า QR" title="ตั้งค่า QR / จำนวนเงิน">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:21px;height:21px;stroke:var(--ink-soft)"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 21v.01M17 21h.01M21 14v3"/></svg>
+  </button>
+  <button class="gear" id="pwdBtn" aria-label="เปลี่ยนรหัสผ่าน" title="เปลี่ยนรหัสผ่าน" style="margin-left:8px">
     <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:21px;height:21px;stroke:var(--ink-soft)"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
   </button>
   <button class="gear" id="refreshBtn" aria-label="รีเฟรช" title="รีเฟรช" style="margin-left:8px">
@@ -220,6 +223,35 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
     <div class="pwd-actions">
       <button class="btn" id="pwdCancel">ยกเลิก</button>
       <button class="btn primary" id="pwdSave">บันทึกรหัสผ่านใหม่</button>
+    </div>
+  </div>
+</div></div>
+
+<!-- QR config modal -->
+<div class="modal pwd-modal" id="qrCfgModal"><div class="sheet">
+  <div class="pwd-head">
+    <button class="pwd-x" id="cfgClose" aria-label="ปิด">✕</button>
+    <div class="pwd-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 21v.01M17 21h.01M21 14v3"/></svg></div>
+    <h3>ตั้งค่า QR พร้อมเพย์</h3>
+    <p>หมายเลขและจำนวนเงินที่ลูกบ้านจะเห็น</p>
+  </div>
+  <div class="pwd-body">
+    <label class="pwd-input">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 3.08 4.18 2 2 0 0 1 5 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      <input type="text" id="cfgQR" placeholder="หมายเลขพร้อมเพย์ (เบอร์โทร/เลขบัตร)" inputmode="numeric">
+    </label>
+    <label class="pwd-input">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <input type="text" id="cfgAmount" placeholder="จำนวนเงิน (บาท) — เว้นว่างได้" inputmode="decimal">
+    </label>
+    <div style="text-align:center;margin:8px 0 4px">
+      <img id="cfgPreview" alt="พรีวิว QR" style="width:170px;max-width:60%;border-radius:12px;border:1px solid var(--line);background:#fff;display:none">
+      <div id="cfgPreviewEmpty" class="pwd-msg">กรอกหมายเลขเพื่อดูพรีวิว QR</div>
+    </div>
+    <div id="cfgMsg" class="pwd-msg"></div>
+    <div class="pwd-actions">
+      <button class="btn" id="cfgCancel">ยกเลิก</button>
+      <button class="btn primary" id="cfgSave">ยืนยัน</button>
     </div>
   </div>
 </div></div>
@@ -323,6 +355,54 @@ document.getElementById('delHouse').onclick=async()=>{
 modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('show');});
 
 document.getElementById('refreshBtn').onclick=loadBoard;
+
+// ====== ตั้งค่า QR พร้อมเพย์ ======
+const qrCfgModal=document.getElementById('qrCfgModal');
+function cfgQrUrl(){
+  const num=(document.getElementById('cfgQR').value||'').trim();
+  const amt=(document.getElementById('cfgAmount').value||'').trim();
+  if(!num) return '';
+  return 'https://promptpay.io/'+encodeURIComponent(num)+(amt?('/'+encodeURIComponent(amt)):'')+'.png';
+}
+function updatePreview(){
+  const url=cfgQrUrl();
+  const img=document.getElementById('cfgPreview'),empty=document.getElementById('cfgPreviewEmpty');
+  if(url){img.src=url;img.style.display='inline-block';empty.style.display='none';}
+  else{img.style.display='none';empty.style.display='block';}
+}
+let cfgTimer=null;
+['cfgQR','cfgAmount'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{
+  clearTimeout(cfgTimer);cfgTimer=setTimeout(updatePreview,400);
+}));
+async function openQRCfg(){
+  document.getElementById('cfgMsg').textContent='';
+  qrCfgModal.classList.add('show');
+  try{
+    const r=await API.get({action:'getConfig'});
+    const c=(r&&r.config)||{};
+    document.getElementById('cfgQR').value=c.promptpay||'';
+    document.getElementById('cfgAmount').value=c.amount||'';
+  }catch(e){}
+  updatePreview();
+}
+document.getElementById('qrCfgBtn').onclick=openQRCfg;
+document.getElementById('cfgClose').onclick=()=>qrCfgModal.classList.remove('show');
+document.getElementById('cfgCancel').onclick=()=>qrCfgModal.classList.remove('show');
+qrCfgModal.addEventListener('click',e=>{if(e.target===qrCfgModal)qrCfgModal.classList.remove('show');});
+document.getElementById('cfgSave').onclick=async()=>{
+  const promptpay=(document.getElementById('cfgQR').value||'').trim();
+  const amount=(document.getElementById('cfgAmount').value||'').trim();
+  const msg=document.getElementById('cfgMsg');
+  if(!promptpay){msg.style.color='#b3261e';msg.textContent='กรุณากรอกหมายเลขพร้อมเพย์';return;}
+  msg.style.color='var(--ink-soft)';msg.textContent='กำลังบันทึก...';
+  try{
+    const r=await API.get({action:'setConfig',promptpay,amount,token:getToken()});
+    if(r&&r.ok){msg.style.color='var(--green)';msg.textContent='บันทึกแล้ว ✓';
+      toast('ตั้งค่า QR เรียบร้อย');setTimeout(()=>qrCfgModal.classList.remove('show'),900);}
+    else if(r&&/token|อนุญาต/.test(r.error||'')){qrCfgModal.classList.remove('show');needRelogin();}
+    else{msg.style.color='#b3261e';msg.textContent=(r&&r.error)||'บันทึกไม่สำเร็จ';}
+  }catch(e){msg.style.color='#b3261e';msg.textContent='เชื่อมต่อไม่ได้: '+e.message;}
+};
 
 // ====== ค้นหาบ้านเลขที่ / ชื่อ ======
 function applyHouseFilter(){
