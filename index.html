@@ -124,7 +124,9 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
       <h3>ลงทะเบียนผู้ใช้</h3>
       <div class="field"><label>ชื่อ</label><input type="text" id="regName" placeholder="ชื่อ-นามสกุล"></div>
       <div class="field"><label>บ้านเลขที่</label><input type="text" id="regHouse" placeholder="เช่น 105/4"></div>
+      <div class="field"><label>ซอย</label><input type="text" id="regSoi" placeholder="เช่น ซอย 5"></div>
       <button class="btn primary" id="regBtn">ส่งข้อมูล</button>
+      <button class="btn" id="regQr" style="margin-top:10px">ดู QR พร้อมเพย์</button>
     </div>
   </div>
 
@@ -140,6 +142,7 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
       <input type="file" id="fileInput" accept="image/*" style="display:none">
       <div class="preview" id="preview"><img id="previewImg" alt=""></div>
       <button class="btn primary" id="sendBtn" style="margin-top:14px" disabled>ส่งสลิป</button>
+      <button class="btn" id="homeQr" style="margin-top:10px">ดู QR พร้อมเพย์</button>
     </div>
   </div>
 
@@ -157,12 +160,21 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
       <h3>แก้ไขข้อมูล</h3>
       <div class="field"><label>ชื่อ</label><input type="text" id="setName"></div>
       <div class="field"><label>บ้านเลขที่</label><input type="text" id="setHouse"></div>
+      <div class="field"><label>ซอย</label><input type="text" id="setSoi"></div>
       <div class="row"><button class="btn" id="setBack">ปิด</button><button class="btn primary" id="setSave">บันทึก</button></div>
-      <p class="hint">เปลี่ยนชื่อ/บ้านเลขที่แล้วกดบันทึก ระบบจะอัปเดตข้อมูลของคุณ</p>
+      <p class="hint">เปลี่ยนข้อมูลแล้วกดบันทึก ระบบจะอัปเดตข้อมูลของคุณ</p>
     </div>
   </div>
 
 </div>
+
+<!-- ====== QR พร้อมเพย์ modal ====== -->
+<div class="modal" id="qrModal"><div class="sheet" style="max-width:360px">
+  <div class="sheet-top"><h3>QR พร้อมเพย์</h3><button class="close" id="qrClose">✕</button></div>
+  <div id="qrBody" style="text-align:center">
+    <div class="spin"></div>
+  </div>
+</div></div>
 
 <div class="tabbar" id="tabbar">
   <button data-tab="vHome" class="active"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>หน้าหลัก</button>
@@ -228,7 +240,7 @@ function setTab(id){show(id);tabbar.querySelectorAll('button').forEach(b=>b.clas
 
 tabbar.querySelectorAll('button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 
-function refreshMe(){ if(me){document.getElementById('mePill').textContent='👤 '+me.name+' · บ้านเลขที่ '+me.house;} }
+function refreshMe(){ if(me){document.getElementById('mePill').textContent='👤 '+me.name+(me.soi?(' · '+me.soi):'')+' · บ้านเลขที่ '+me.house;} }
 
 // ---- start ----
 function start(){
@@ -237,11 +249,11 @@ function start(){
 
 // ---- register ----
 document.getElementById('regBtn').onclick=async()=>{
-  const name=regName.value.trim(), house=regHouse.value.trim();
+  const name=regName.value.trim(), house=regHouse.value.trim(), soi=regSoi.value.trim();
   if(!name||!house){toast('กรอกชื่อและบ้านเลขที่',true);return;}
   const btn=regBtn;btn.disabled=true;btn.textContent='กำลังส่ง...';
-  try{ const r=await API.post({action:'addUser',name,house,userId:uid()});
-    if(r.ok){me={name,house};localStorage.setItem('rp4_me',JSON.stringify(me));refreshMe();setTab('vHome');toast('ลงทะเบียนสำเร็จ');}
+  try{ const r=await API.post({action:'addUser',name,house,soi,userId:uid()});
+    if(r.ok){me={name,house,soi};localStorage.setItem('rp4_me',JSON.stringify(me));refreshMe();setTab('vHome');toast('ลงทะเบียนสำเร็จ');}
     else toast(r.error||'เกิดข้อผิดพลาด',true);
   }catch(e){toast('เชื่อมต่อไม่ได้: '+e.message,true);}
   btn.disabled=false;btn.textContent='ส่งข้อมูล';
@@ -278,17 +290,54 @@ async function loadHistory(){
 }
 
 // ---- settings / edit ----
-function fillSet(){if(me){setName.value=me.name;setHouse.value=me.house;}}
+function fillSet(){if(me){setName.value=me.name;setHouse.value=me.house;setSoi.value=me.soi||'';}}
 document.getElementById('openSet').onclick=()=>{fillSet();show('vSet');};
 document.getElementById('editMe').onclick=()=>{fillSet();show('vSet');};
 document.getElementById('setBack').onclick=()=>{me?setTab('vHome'):show('vReg');};
 document.getElementById('setSave').onclick=async()=>{
-  const name=setName.value.trim(),house=setHouse.value.trim();
+  const name=setName.value.trim(),house=setHouse.value.trim(),soi=setSoi.value.trim();
   if(!name||!house){toast('กรอกชื่อและบ้านเลขที่',true);return;}
-  try{await API.post({action:'addUser',name,house,userId:uid()});}catch(e){}
-  me={name,house};localStorage.setItem('rp4_me',JSON.stringify(me));refreshMe();
+  try{await API.post({action:'addUser',name,house,soi,userId:uid()});}catch(e){}
+  me={name,house,soi};localStorage.setItem('rp4_me',JSON.stringify(me));refreshMe();
   toast('บันทึกแล้ว');setTab('vHome');
 };
+
+// ---- QR พร้อมเพย์ ----
+const qrModal=document.getElementById('qrModal');
+let qrUrl='';
+function buildQrUrl(c){
+  if(!c||!c.promptpay) return '';
+  const amt=(c.amount||'').toString().trim();
+  return 'https://promptpay.io/'+encodeURIComponent(c.promptpay)+(amt?('/'+encodeURIComponent(amt)):'')+'.png';
+}
+async function openQr(){
+  qrModal.classList.add('show');
+  const body=document.getElementById('qrBody');
+  body.innerHTML='<div class="spin"></div>';
+  try{
+    const r=await API.get({action:'getConfig'});
+    qrUrl=buildQrUrl(r&&r.config);
+    if(!qrUrl){body.innerHTML='<div class="empty">ผู้ดูแลยังไม่ได้ตั้งค่า QR</div>';return;}
+    const amt=(r.config.amount||'').toString().trim();
+    body.innerHTML=
+      '<img src="'+qrUrl+'" alt="QR พร้อมเพย์" style="width:100%;max-width:280px;border-radius:14px;border:1px solid var(--line)">'
+      +'<div style="margin-top:10px;font-family:Kanit;color:var(--ink)">พร้อมเพย์ '+r.config.promptpay+(amt?(' · '+amt+' บาท'):'')+'</div>'
+      +'<button class="btn primary" id="qrSave" style="margin-top:14px">บันทึก QR</button>';
+    document.getElementById('qrSave').onclick=saveQr;
+  }catch(e){body.innerHTML='<div class="empty">โหลดไม่สำเร็จ<br>'+e.message+'</div>';}
+}
+async function saveQr(){
+  if(!qrUrl)return;
+  try{
+    const resp=await fetch(qrUrl);const blob=await resp.blob();
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='promptpay-qr.png';a.click();
+    URL.revokeObjectURL(a.href);toast('บันทึก QR แล้ว');
+  }catch(e){ window.open(qrUrl,'_blank'); toast('เปิดรูป QR แล้ว กดค้างเพื่อบันทึก'); }
+}
+document.getElementById('regQr').onclick=openQr;
+document.getElementById('homeQr').onclick=openQr;
+document.getElementById('qrClose').onclick=()=>qrModal.classList.remove('show');
+qrModal.addEventListener('click',e=>{if(e.target===qrModal)qrModal.classList.remove('show');});
 
 start();
 </script>
