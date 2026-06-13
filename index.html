@@ -43,6 +43,15 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
 .row{display:flex;gap:10px;}
 .row .btn{width:auto;flex:1;}
 .hint{font-size:.8rem;color:var(--ink-soft);line-height:1.55;margin-top:8px;}
+.reg-tabs{display:flex;gap:6px;background:var(--green-soft);border:1px solid var(--green-line);
+  border-radius:13px;padding:4px;margin-bottom:16px;}
+.reg-tab{flex:1;border:none;background:none;padding:10px 6px;border-radius:10px;
+  font-family:'Kanit',sans-serif;font-weight:500;font-size:.88rem;color:var(--green);
+  cursor:pointer;transition:.15s;}
+.reg-tab.active{background:#fff;box-shadow:var(--shadow);color:var(--green);}
+.reg-tab:not(.active){color:var(--ink-soft);}
+.field-group{display:none;}
+.field-group.active{display:block;}
 .me-pill{display:inline-flex;align-items:center;gap:8px;background:var(--green-soft);border:1px solid var(--green-line);
   color:var(--green);font-family:'Kanit',sans-serif;font-weight:500;padding:7px 13px;border-radius:999px;font-size:.9rem;}
 .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);background:var(--green);color:#fff;
@@ -120,14 +129,32 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
 
 <div class="wrap">
 
-  <!-- REGISTER -->
+  <!-- REGISTER / LOGIN -->
   <div class="view" id="vReg">
     <div class="card">
-      <h3>ลงทะเบียนผู้ใช้</h3>
-      <div class="field"><label>ชื่อ</label><input type="text" id="regName" placeholder="ชื่อ-นามสกุล"></div>
-      <div class="field"><label>บ้านเลขที่</label><input type="text" id="regHouse" placeholder="เช่น 105/4"></div>
-      <div class="field"><label>ซอย</label><input type="text" id="regSoi" placeholder="เช่น ซอย 5"></div>
-      <button class="btn primary" id="regBtn">ส่งข้อมูล</button>
+      <div class="reg-tabs">
+        <button class="reg-tab active" id="tabRegister" data-mode="register">ลงทะเบียนใหม่</button>
+        <button class="reg-tab" id="tabLogin" data-mode="login">เข้าระบบ (มีบ้านอยู่แล้ว)</button>
+      </div>
+
+      <!-- ลงทะเบียนใหม่ -->
+      <div class="field-group active" id="fgRegister">
+        <h3>ลงทะเบียนผู้ใช้ใหม่</h3>
+        <div class="field"><label>ชื่อ</label><input type="text" id="regName" placeholder="ชื่อ-นามสกุล"></div>
+        <div class="field"><label>บ้านเลขที่</label><input type="text" id="regHouse" placeholder="เช่น 105/4"></div>
+        <div class="field"><label>ซอย</label><input type="text" id="regSoi" placeholder="เช่น ซอย 5"></div>
+        <button class="btn primary" id="regBtn">ส่งข้อมูล</button>
+      </div>
+
+      <!-- เข้าระบบ (คนที่ 2 ของบ้าน) -->
+      <div class="field-group" id="fgLogin">
+        <h3>เข้าระบบ</h3>
+        <p class="hint" style="margin-top:0;margin-bottom:12px">สำหรับสมาชิกอีกคนในบ้านที่มีคนลงทะเบียนไว้แล้ว</p>
+        <div class="field"><label>บ้านเลขที่</label><input type="text" id="loginHouse" placeholder="เช่น 105/4"></div>
+        <div class="field"><label>ชื่อของคุณ</label><input type="text" id="loginName" placeholder="ชื่อ-นามสกุล"></div>
+        <button class="btn primary" id="loginBtn">เข้าระบบ</button>
+      </div>
+
       <button class="btn" id="regQr" style="margin-top:10px">ดู QR พร้อมเพย์</button>
     </div>
   </div>
@@ -249,16 +276,39 @@ function start(){
   if(!me){ show('vReg'); } else { refreshMe(); setTab('vHome'); }
 }
 
+// ---- เลือกแท็บ ลงทะเบียนใหม่ / เข้าระบบ ----
+function setRegMode(mode){
+  document.getElementById('tabRegister').classList.toggle('active',mode==='register');
+  document.getElementById('tabLogin').classList.toggle('active',mode==='login');
+  document.getElementById('fgRegister').classList.toggle('active',mode==='register');
+  document.getElementById('fgLogin').classList.toggle('active',mode==='login');
+}
+document.getElementById('tabRegister').onclick=()=>setRegMode('register');
+document.getElementById('tabLogin').onclick=()=>setRegMode('login');
+
 // ---- register ----
 document.getElementById('regBtn').onclick=async()=>{
   const name=regName.value.trim(), house=regHouse.value.trim(), soi=regSoi.value.trim();
   if(!name||!house){toast('กรอกชื่อและบ้านเลขที่',true);return;}
   const btn=regBtn;btn.disabled=true;btn.textContent='กำลังส่ง...';
-  try{ const r=await API.post({action:'addUser',name,house,soi,userId:uid()});
-    if(r.ok){me={name,house,soi};localStorage.setItem('rp4_me',JSON.stringify(me));refreshMe();setTab('vHome');toast('ลงทะเบียนสำเร็จ');}
+  try{ const r=await API.get({action:'addUser',name,house,soi,userId:uid()});
+    if(r.ok){me={name,house,soi:(r.soi!=null?r.soi:soi)};localStorage.setItem('rp4_me',JSON.stringify(me));refreshMe();setTab('vHome');toast('ลงทะเบียนสำเร็จ');}
+    else if(r.duplicate){toast(r.error,true);loginHouse.value=house;setRegMode('login');}
     else toast(r.error||'เกิดข้อผิดพลาด',true);
   }catch(e){toast('เชื่อมต่อไม่ได้: '+e.message,true);}
   btn.disabled=false;btn.textContent='ส่งข้อมูล';
+};
+
+// ---- เข้าระบบ (คนที่ 2 ของบ้าน) ----
+document.getElementById('loginBtn').onclick=async()=>{
+  const house=document.getElementById('loginHouse').value.trim(), name=document.getElementById('loginName').value.trim();
+  if(!name||!house){toast('กรอกบ้านเลขที่และชื่อ',true);return;}
+  const btn=document.getElementById('loginBtn');btn.disabled=true;btn.textContent='กำลังเข้าระบบ...';
+  try{ const r=await API.get({action:'loginHouse',name,house,userId:uid()});
+    if(r.ok){me={name,house,soi:r.soi||''};localStorage.setItem('rp4_me',JSON.stringify(me));refreshMe();setTab('vHome');toast('เข้าระบบสำเร็จ');}
+    else toast(r.error||'เกิดข้อผิดพลาด',true);
+  }catch(e){toast('เชื่อมต่อไม่ได้: '+e.message,true);}
+  btn.disabled=false;btn.textContent='เข้าระบบ';
 };
 
 // ---- pick + upload slip ----
@@ -299,9 +349,12 @@ document.getElementById('setBack').onclick=()=>{me?setTab('vHome'):show('vReg');
 document.getElementById('setSave').onclick=async()=>{
   const name=setName.value.trim(),house=setHouse.value.trim(),soi=setSoi.value.trim();
   if(!name||!house){toast('กรอกชื่อและบ้านเลขที่',true);return;}
-  try{await API.post({action:'addUser',name,house,soi,userId:uid()});}catch(e){}
-  me={name,house,soi};localStorage.setItem('rp4_me',JSON.stringify(me));refreshMe();
-  toast('บันทึกแล้ว');setTab('vHome');
+  try{
+    const r=await API.get({action:'addUser',name,house,soi,userId:uid()});
+    if(!r.ok){toast(r.error||'บันทึกไม่สำเร็จ',true);return;}
+    me={name,house,soi:(r.soi!=null?r.soi:soi)};localStorage.setItem('rp4_me',JSON.stringify(me));refreshMe();
+    toast('บันทึกแล้ว');setTab('vHome');
+  }catch(e){toast('เชื่อมต่อไม่ได้: '+e.message,true);}
 };
 
 // ---- QR พร้อมเพย์ ----
