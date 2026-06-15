@@ -43,6 +43,15 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
 .row{display:flex;gap:10px;}
 .row .btn{width:auto;flex:1;}
 .hint{font-size:.8rem;color:var(--ink-soft);line-height:1.55;margin-top:8px;}
+.reg-tabs{display:flex;gap:6px;background:var(--green-soft);border:1px solid var(--green-line);
+  border-radius:13px;padding:4px;margin-bottom:16px;}
+.reg-tab{flex:1;border:none;background:none;padding:10px 6px;border-radius:10px;
+  font-family:'Kanit',sans-serif;font-weight:500;font-size:.88rem;color:var(--green);
+  cursor:pointer;transition:.15s;}
+.reg-tab.active{background:#fff;box-shadow:var(--shadow);color:var(--green);}
+.reg-tab:not(.active){color:var(--ink-soft);}
+.field-group{display:none;}
+.field-group.active{display:block;}
 .me-pill{display:inline-flex;align-items:center;gap:8px;background:var(--green-soft);border:1px solid var(--green-line);
   color:var(--green);font-family:'Kanit',sans-serif;font-weight:500;padding:7px 13px;border-radius:999px;font-size:.9rem;}
 .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);background:var(--green);color:#fff;
@@ -73,6 +82,12 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
 .slip .thumb{width:100%;aspect-ratio:3/4;object-fit:cover;background:#f0f3ee;display:block;}
 .slip .meta{padding:8px 10px;font-size:.78rem;color:var(--ink-soft);}
 .slip .meta b{display:block;color:var(--ink);font-family:'Kanit',sans-serif;font-weight:500;font-size:.85rem;}
+.slip-wrap{position:relative;}
+.slip-del{position:absolute;top:6px;right:6px;z-index:3;width:30px;height:30px;border-radius:9px;border:none;
+  background:rgba(36,48,36,.55);color:#fff;display:grid;place-items:center;cursor:pointer;
+  backdrop-filter:blur(2px);transition:.15s;}
+.slip-del:hover{background:#b3261e;}
+.slip-del svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
 .empty{text-align:center;color:var(--ink-soft);padding:40px 20px;font-size:.95rem;}
 .empty svg{width:46px;height:46px;stroke:var(--green-line);stroke-width:1.4;fill:none;margin-bottom:10px;}
 .spin{width:30px;height:30px;border:3px solid var(--green-line);border-top-color:var(--green);border-radius:50%;
@@ -353,7 +368,7 @@ async function loadBoard(){
     board.innerHTML='<div class="adm-grid">'+houses.map(h=>
       `<button class="house ${h.slips>0?'has':''}" data-house="${h.house}" data-name="${(h.name||'').replace(/"/g,'&quot;')}" data-soi="${(h.soi||'').replace(/"/g,'&quot;')}">
         <span class="badge">${h.slips>0?('จ่ายแล้ว'+(h.slips>1?(' '+h.slips):'')):'ยังไม่จ่าย'}</span>
-        <span class="info"><span class="h">บ้านเลขที่ ${h.house}</span><span class="n">${h.soi?('ซ.'+h.soi+' · '):''}${h.name||'-'}</span></span>
+        <span class="info"><span class="h">บ้านเลขที่ ${h.house}</span><span class="n">${h.soi?('ซ.'+h.soi+' · '):''}${h.name||'-'}${h.nickname?(' ('+h.nickname+')'):''}</span></span>
       </button>`).join('')+'</div>';
     applyHouseFilter();
   }catch(e){board.innerHTML='<div class="empty">โหลดไม่สำเร็จ<br>'+e.message+'</div>';}
@@ -370,10 +385,27 @@ board.addEventListener('click',async e=>{
     const list=r.slips||[];
     if(!list.length){mBody.innerHTML='<div class="empty">'+`<svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8"/></svg>`+'<div>ยังไม่มีสลิปสำหรับบ้านหลังนี้</div></div>';return;}
     mBody.innerHTML='<div class="slip-grid">'+list.map(s=>
-      `<a class="slip" href="https://drive.google.com/file/d/${s.fileId}/view" target="_blank" rel="noopener">
-        <img class="thumb" src="${s.url}" loading="lazy" alt="สลิป">
-        <div class="meta"><b>${s.name||'-'}</b>${fmtTime(s.time)}</div></a>`).join('')+'</div>';
+      `<div class="slip-wrap">
+        <button class="slip-del" data-fileid="${s.fileId}" aria-label="ลบสลิป" title="ลบสลิป"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0-1 14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1L4 6h16Z"/><path d="M10 11v6M14 11v6"/></svg></button>
+        <a class="slip" href="https://drive.google.com/file/d/${s.fileId}/view" target="_blank" rel="noopener">
+          <img class="thumb" src="${s.url}" loading="lazy" alt="สลิป">
+          <div class="meta"><b>${s.name||'-'}${s.nickname?(' ('+s.nickname+')'):''}</b>${fmtTime(s.time)}</div></a>
+      </div>`).join('')+'</div>';
   }catch(err){mBody.innerHTML='<div class="empty">โหลดไม่สำเร็จ<br>'+err.message+'</div>';}
+});
+mBody.addEventListener('click',async e=>{
+  const btn=e.target.closest('.slip-del');if(!btn)return;
+  e.preventDefault();e.stopPropagation();
+  if(!confirm('ลบสลิปนี้?'))return;
+  const fileId=btn.dataset.fileid;
+  btn.disabled=true;
+  try{ const r=await API.get({action:'deleteSlip',house:currentHouse,fileId,token:getToken()});
+    if(r&&r.ok){btn.closest('.slip-wrap').remove();toast('ลบสลิปแล้ว');
+      if(!mBody.querySelector('.slip-wrap'))mBody.innerHTML='<div class="empty">'+`<svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8"/></svg>`+'<div>ยังไม่มีสลิปสำหรับบ้านหลังนี้</div></div>';
+      loadBoard();}
+    else if(r&&/token|อนุญาต/.test(r.error||'')){needRelogin();}
+    else{toast((r&&r.error)||'ลบไม่สำเร็จ',true);btn.disabled=false;}
+  }catch(err){toast('เชื่อมต่อไม่ได้: '+err.message,true);btn.disabled=false;}
 });
 
 function openModal(t){document.getElementById('mTitle').textContent=t;mBody.innerHTML='<div class="spin"></div>';modal.classList.add('show');}
