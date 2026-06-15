@@ -82,6 +82,12 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
 .slip .thumb{width:100%;aspect-ratio:3/4;object-fit:cover;background:#f0f3ee;display:block;}
 .slip .meta{padding:8px 10px;font-size:.78rem;color:var(--ink-soft);}
 .slip .meta b{display:block;color:var(--ink);font-family:'Kanit',sans-serif;font-weight:500;font-size:.85rem;}
+.slip-wrap{position:relative;}
+.slip-del{position:absolute;top:6px;right:6px;z-index:3;width:30px;height:30px;border-radius:9px;border:none;
+  background:rgba(36,48,36,.55);color:#fff;display:grid;place-items:center;cursor:pointer;
+  backdrop-filter:blur(2px);transition:.15s;}
+.slip-del:hover{background:#b3261e;}
+.slip-del svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
 .empty{text-align:center;color:var(--ink-soft);padding:40px 20px;font-size:.95rem;}
 .empty svg{width:46px;height:46px;stroke:var(--green-line);stroke-width:1.4;fill:none;margin-bottom:10px;}
 .spin{width:30px;height:30px;border:3px solid var(--green-line);border-top-color:var(--green);border-radius:50%;
@@ -141,6 +147,7 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
       <div class="field-group active" id="fgRegister">
         <h3>ลงทะเบียนผู้ใช้ใหม่</h3>
         <div class="field"><label>ชื่อ</label><input type="text" id="regName" placeholder="ชื่อ-นามสกุล"></div>
+        <div class="field"><label>ชื่อเล่น</label><input type="text" id="regNickname" placeholder="เช่น เอ้"></div>
         <div class="field"><label>บ้านเลขที่</label><input type="text" id="regHouse" placeholder="เช่น 105/4"></div>
         <div class="field"><label>ซอย</label><input type="text" id="regSoi" placeholder="เช่น ซอย 5"></div>
         <button class="btn primary" id="regBtn">ส่งข้อมูล</button>
@@ -152,6 +159,7 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
         <p class="hint" style="margin-top:0;margin-bottom:12px">สำหรับสมาชิกอีกคนในบ้านที่มีคนลงทะเบียนไว้แล้ว</p>
         <div class="field"><label>บ้านเลขที่</label><input type="text" id="loginHouse" placeholder="เช่น 105/4"></div>
         <div class="field"><label>ชื่อของคุณ</label><input type="text" id="loginName" placeholder="ชื่อ-นามสกุล"></div>
+        <div class="field"><label>ชื่อเล่น</label><input type="text" id="loginNickname" placeholder="เช่น บี"></div>
         <button class="btn primary" id="loginBtn">เข้าระบบ</button>
       </div>
 
@@ -188,6 +196,7 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
     <div class="card">
       <h3>แก้ไขข้อมูล</h3>
       <div class="field"><label>ชื่อ</label><input type="text" id="setName"></div>
+      <div class="field"><label>ชื่อเล่น</label><input type="text" id="setNickname"></div>
       <div class="field"><label>บ้านเลขที่</label><input type="text" id="setHouse"></div>
       <div class="field"><label>ซอย</label><input type="text" id="setSoi"></div>
       <div class="row"><button class="btn" id="setBack">ปิด</button><button class="btn primary" id="setSave">บันทึก</button></div>
@@ -269,7 +278,7 @@ function setTab(id){show(id);tabbar.querySelectorAll('button').forEach(b=>b.clas
 
 tabbar.querySelectorAll('button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 
-function refreshMe(){ if(me){document.getElementById('mePill').textContent='👤 '+me.name+(me.soi?(' · '+me.soi):'')+' · บ้านเลขที่ '+me.house;} }
+function refreshMe(){ if(me){document.getElementById('mePill').textContent='👤 '+me.name+(me.nickname?(' ('+me.nickname+')'):'')+(me.soi?(' · '+me.soi):'')+' · บ้านเลขที่ '+me.house;} }
 
 // ---- start ----
 function start(){
@@ -288,11 +297,11 @@ document.getElementById('tabLogin').onclick=()=>setRegMode('login');
 
 // ---- register ----
 document.getElementById('regBtn').onclick=async()=>{
-  const name=regName.value.trim(), house=regHouse.value.trim(), soi=regSoi.value.trim();
+  const name=regName.value.trim(), house=regHouse.value.trim(), soi=regSoi.value.trim(), nickname=regNickname.value.trim();
   if(!name||!house){toast('กรอกชื่อและบ้านเลขที่',true);return;}
   const btn=regBtn;btn.disabled=true;btn.textContent='กำลังส่ง...';
-  try{ const r=await API.get({action:'addUser',name,house,soi,userId:uid()});
-    if(r.ok){me={name,house,soi:(r.soi!=null?r.soi:soi)};localStorage.setItem('rp4_me',JSON.stringify(me));refreshMe();setTab('vHome');toast('ลงทะเบียนสำเร็จ');}
+  try{ const r=await API.get({action:'addUser',name,house,soi,nickname,userId:uid()});
+    if(r.ok){me={name,house,soi:(r.soi!=null?r.soi:soi),nickname:(r.nickname!=null?r.nickname:nickname)};localStorage.setItem('rp4_me',JSON.stringify(me));refreshMe();setTab('vHome');toast('ลงทะเบียนสำเร็จ');}
     else if(r.duplicate){toast(r.error,true);loginHouse.value=house;setRegMode('login');}
     else toast(r.error||'เกิดข้อผิดพลาด',true);
   }catch(e){toast('เชื่อมต่อไม่ได้: '+e.message,true);}
@@ -301,11 +310,11 @@ document.getElementById('regBtn').onclick=async()=>{
 
 // ---- เข้าระบบ (คนที่ 2 ของบ้าน) ----
 document.getElementById('loginBtn').onclick=async()=>{
-  const house=document.getElementById('loginHouse').value.trim(), name=document.getElementById('loginName').value.trim();
+  const house=document.getElementById('loginHouse').value.trim(), name=document.getElementById('loginName').value.trim(), nickname=document.getElementById('loginNickname').value.trim();
   if(!name||!house){toast('กรอกบ้านเลขที่และชื่อ',true);return;}
   const btn=document.getElementById('loginBtn');btn.disabled=true;btn.textContent='กำลังเข้าระบบ...';
-  try{ const r=await API.get({action:'loginHouse',name,house,userId:uid()});
-    if(r.ok){me={name,house,soi:r.soi||''};localStorage.setItem('rp4_me',JSON.stringify(me));refreshMe();setTab('vHome');toast('เข้าระบบสำเร็จ');}
+  try{ const r=await API.get({action:'loginHouse',name,house,nickname,userId:uid()});
+    if(r.ok){me={name,house,soi:r.soi||'',nickname:(r.nickname!=null?r.nickname:nickname)};localStorage.setItem('rp4_me',JSON.stringify(me));refreshMe();setTab('vHome');toast('เข้าระบบสำเร็จ');}
     else toast(r.error||'เกิดข้อผิดพลาด',true);
   }catch(e){toast('เชื่อมต่อไม่ได้: '+e.message,true);}
   btn.disabled=false;btn.textContent='เข้าระบบ';
@@ -322,7 +331,7 @@ document.getElementById('fileInput').onchange=async e=>{
 document.getElementById('sendBtn').onclick=async()=>{
   if(!pendingDataUrl||!me)return;
   const btn=sendBtn;btn.disabled=true;btn.textContent='กำลังส่ง...';
-  try{ const r=await API.post({action:'uploadSlip',house:me.house,name:me.name,dataUrl:pendingDataUrl});
+  try{ const r=await API.post({action:'uploadSlip',house:me.house,name:me.name,nickname:(me.nickname||''),dataUrl:pendingDataUrl});
     if(r.ok){toast('ส่งสลิปสำเร็จ ✓');pendingDataUrl=null;preview.style.display='none';fileInput.value='';btn.textContent='ส่งสลิป';}
     else {toast(r.error||'ส่งไม่สำเร็จ',true);btn.textContent='ส่งสลิป';btn.disabled=false;}
   }catch(e){toast('เชื่อมต่อไม่ได้: '+e.message,true);btn.textContent='ส่งสลิป';btn.disabled=false;}
@@ -335,24 +344,39 @@ async function loadHistory(){
     const list=(r.slips||[]);
     if(!list.length){histBody.innerHTML='<div class="empty">'+`<svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8"/></svg>`+'<div>ยังไม่มีสลิป</div></div>';return;}
     histBody.innerHTML='<div class="slip-grid">'+list.map(s=>
-      `<a class="slip" href="https://drive.google.com/file/d/${s.fileId}/view" target="_blank" rel="noopener">
-        <img class="thumb" src="${s.url}" loading="lazy" alt="สลิป">
-        <div class="meta"><b>บ้านเลขที่ ${s.house}</b>${fmtTime(s.time)}</div></a>`).join('')+'</div>';
+      `<div class="slip-wrap">
+        <button class="slip-del" data-fileid="${s.fileId}" aria-label="ลบสลิป" title="ลบสลิป"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0-1 14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1L4 6h16Z"/><path d="M10 11v6M14 11v6"/></svg></button>
+        <a class="slip" href="https://drive.google.com/file/d/${s.fileId}/view" target="_blank" rel="noopener">
+          <img class="thumb" src="${s.url}" loading="lazy" alt="สลิป">
+          <div class="meta"><b>บ้านเลขที่ ${s.house}${s.nickname?(' · '+s.nickname):''}</b>${fmtTime(s.time)}</div></a>
+      </div>`).join('')+'</div>';
   }catch(e){histBody.innerHTML='<div class="empty">โหลดไม่สำเร็จ<br>'+e.message+'</div>';}
 }
+histBody.addEventListener('click',async e=>{
+  const btn=e.target.closest('.slip-del');if(!btn)return;
+  e.preventDefault();e.stopPropagation();
+  if(!confirm('ลบสลิปนี้?'))return;
+  const fileId=btn.dataset.fileid;
+  btn.disabled=true;
+  try{ const r=await API.get({action:'deleteSlip',house:me.house,fileId});
+    if(r.ok){btn.closest('.slip-wrap').remove();toast('ลบสลิปแล้ว');
+      if(!histBody.querySelector('.slip-wrap'))histBody.innerHTML='<div class="empty">'+`<svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8"/></svg>`+'<div>ยังไม่มีสลิป</div></div>';}
+    else{toast(r.error||'ลบไม่สำเร็จ',true);btn.disabled=false;}
+  }catch(e){toast('เชื่อมต่อไม่ได้: '+e.message,true);btn.disabled=false;}
+});
 
 // ---- settings / edit ----
-function fillSet(){if(me){setName.value=me.name;setHouse.value=me.house;setSoi.value=me.soi||'';}}
+function fillSet(){if(me){setName.value=me.name;setNickname.value=me.nickname||'';setHouse.value=me.house;setSoi.value=me.soi||'';}}
 document.getElementById('openSet').onclick=()=>{fillSet();show('vSet');};
 document.getElementById('editMe').onclick=()=>{fillSet();show('vSet');};
 document.getElementById('setBack').onclick=()=>{me?setTab('vHome'):show('vReg');};
 document.getElementById('setSave').onclick=async()=>{
-  const name=setName.value.trim(),house=setHouse.value.trim(),soi=setSoi.value.trim();
+  const name=setName.value.trim(),house=setHouse.value.trim(),soi=setSoi.value.trim(),nickname=setNickname.value.trim();
   if(!name||!house){toast('กรอกชื่อและบ้านเลขที่',true);return;}
   try{
-    const r=await API.get({action:'addUser',name,house,soi,userId:uid()});
+    const r=await API.get({action:'addUser',name,house,soi,nickname,userId:uid()});
     if(!r.ok){toast(r.error||'บันทึกไม่สำเร็จ',true);return;}
-    me={name,house,soi:(r.soi!=null?r.soi:soi)};localStorage.setItem('rp4_me',JSON.stringify(me));refreshMe();
+    me={name,house,soi:(r.soi!=null?r.soi:soi),nickname:(r.nickname!=null?r.nickname:nickname)};localStorage.setItem('rp4_me',JSON.stringify(me));refreshMe();
     toast('บันทึกแล้ว');setTab('vHome');
   }catch(e){toast('เชื่อมต่อไม่ได้: '+e.message,true);}
 };
