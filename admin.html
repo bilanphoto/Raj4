@@ -127,6 +127,91 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
   display:grid;place-items:center;font-size:1.1rem;color:var(--ink-soft);}
 
 .head-inner{max-width:1100px;} .wrap{max-width:1100px;}
+/* ====== MAP VIEW ====== */
+:root{
+  --map-bg:#0F172A; --map-grid:rgba(255,255,255,.025);
+  --map-road:#334155; --map-main-road:#334155;
+  --map-main-road-highlight:rgba(234,179,8,.12);
+  --plot-even-fill:#334155; --plot-even-stroke:rgba(255,255,255,.2);
+  --plot-odd-fill:#1e3a5f;  --plot-odd-stroke:rgba(96,165,250,.35);
+  --text-on-plot:rgba(255,255,255,.6);
+  --text-secondary:#9CA3AF;
+}
+body.light-mode-map{
+  --map-bg:#F8FAFC; --map-grid:rgba(0,0,0,.02);
+  --map-road:#CBD5E1; --map-main-road:#CBD5E1;
+  --map-main-road-highlight:rgba(253,224,71,.25);
+  --plot-even-fill:#FFFFFF; --plot-even-stroke:rgba(0,0,0,.15);
+  --plot-odd-fill:#F0F9FF;  --plot-odd-stroke:rgba(147,197,253,.5);
+  --text-on-plot:rgba(15,23,42,.7); --text-secondary:#4B5563;
+}
+.adm-view{display:none;padding-bottom:80px;} .adm-view.active{display:block;}
+.adm-tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;
+  background:rgba(238,241,236,.95);backdrop-filter:blur(10px);border-top:1px solid var(--line);
+  display:none;flex-direction:row;}
+.adm-tab{flex:1;border:none;background:none;padding:11px 0 14px;cursor:pointer;
+  color:var(--ink-soft);font-family:'Kanit',sans-serif;font-size:.8rem;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.adm-tab svg{width:23px;height:23px;stroke:var(--ink-soft);fill:none;stroke-width:1.8;}
+.adm-tab.active{color:var(--green);} .adm-tab.active svg{stroke:var(--green);}
+#vMap{position:relative;background:var(--map-bg);transition:background .3s;overflow:hidden;}
+#vMap.active{display:flex;flex-direction:column;}
+.map-body{flex:1;overflow:hidden;cursor:grab;position:relative;}
+.map-body:active{cursor:grabbing;}
+#admin-svg{transform-origin:0 0;transition:transform .05s linear;}
+.map-legend{position:absolute;bottom:90px;left:12px;z-index:10;
+  background:rgba(17,24,39,.82);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);
+  border-radius:10px;padding:7px 12px;display:flex;flex-direction:column;gap:5px;}
+.leg-row{display:flex;align-items:center;gap:7px;font-size:.7rem;color:#9CA3AF;}
+.leg-dot{width:10px;height:10px;border-radius:2px;display:inline-block;}
+.map-ctrls{position:absolute;top:12px;right:12px;z-index:10;display:flex;flex-direction:column;gap:6px;}
+.mc-btn{width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.15);
+  background:rgba(17,24,39,.8);color:#e2e8f0;font-size:1.1rem;cursor:pointer;
+  display:grid;place-items:center;backdrop-filter:blur(4px);transition:.15s;}
+.mc-btn:hover{background:rgba(47,107,61,.7);border-color:var(--green-line);}
+/* SVG plot styles */
+.svg-road{fill:var(--map-road);}
+.svg-main-road{fill:var(--map-main-road);}
+.svg-main-road-highlight{fill:var(--map-main-road-highlight);}
+.svg-plot{cursor:pointer;}
+.svg-plot rect{transition:fill .2s,stroke .2s;stroke-width:1.5;}
+.svg-plot.lane-even rect{fill:var(--plot-even-fill);stroke:var(--plot-even-stroke);}
+.svg-plot.lane-odd  rect{fill:var(--plot-odd-fill);stroke:var(--plot-odd-stroke);}
+/* green = paid this month */
+.svg-plot.map-paid rect{fill:#166534!important;stroke:#4ade80!important;}
+/* gray = registered but not paid */
+.svg-plot.map-unpaid rect{fill:#27272a!important;stroke:#52525b!important;}
+/* unregistered = default dim */
+.svg-plot:hover rect{fill:#3B82F6!important;stroke:#60A5FA!important;}
+.svg-plot.map-active rect{fill:#3B82F6!important;stroke:#93C5FD!important;stroke-width:2.5px!important;}
+.svg-plot text{fill:var(--text-on-plot);font-family:'Kanit',sans-serif;font-size:11px;font-weight:600;
+  text-anchor:middle;dominant-baseline:middle;pointer-events:none;}
+.road-label{fill:var(--text-secondary);font-family:'Kanit',sans-serif;font-weight:700;font-size:18px;text-anchor:middle;pointer-events:none;}
+.road-arrow{fill:#6B7280;pointer-events:none;}
+.sub-road-label{fill:var(--text-secondary);font-family:'Kanit',sans-serif;font-weight:600;font-size:13px;text-anchor:middle;pointer-events:none;}
+.text-annotation{fill:#6B7280;font-family:'Kanit',sans-serif;font-size:14px;pointer-events:none;}
+/* map search */
+.map-search{position:absolute;top:12px;left:12px;z-index:10;width:220px;}
+.map-search input{width:100%;font-family:'Kanit',sans-serif;font-size:.88rem;padding:9px 12px;
+  border-radius:11px;border:1px solid rgba(255,255,255,.18);background:rgba(15,23,42,.82);
+  color:#e2e8f0;outline:none;backdrop-filter:blur(6px);}
+.map-search input::placeholder{color:#64748b;}
+.map-search input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px rgba(74,222,128,.15);}
+.map-sugg{margin-top:5px;background:rgba(15,23,42,.95);border:1px solid rgba(255,255,255,.12);
+  border-radius:10px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4);display:none;}
+.map-sugg.show{display:block;}
+.map-si{padding:9px 13px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;gap:2px;}
+.map-si:last-child{border-bottom:none;}
+.map-si:hover{background:rgba(74,222,128,.12);}
+.map-si .si-num{color:#e2e8f0;font-family:'Kanit',sans-serif;font-size:.9rem;font-weight:600;}
+.map-si .si-meta{color:#64748b;font-size:.78rem;}
+.map-si.si-paid .si-num::before{content:'🟢 ';}
+.map-si.si-unpaid .si-num::before{content:'⬜ ';}
+.map-si.si-none .si-num::before{content:'◾ ';}
+/* tooltip */
+.map-tt{position:fixed;z-index:60;pointer-events:none;display:none;
+  background:rgba(15,23,42,.9);color:#e2e8f0;font-family:'Kanit',sans-serif;font-size:.82rem;
+  padding:5px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.15);backdrop-filter:blur(4px);}
+.map-tt.show{display:block;}
 /* login gate */
 .gate{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;padding:20px;
   background:radial-gradient(1000px 500px at 50% -10%,#f6f8f4,transparent 60%),linear-gradient(160deg,var(--bg-1),var(--bg-2));}
@@ -197,6 +282,8 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
   </button>
 </div></header>
 
+<!-- ===== TAB: รายการ ===== -->
+<div class="adm-view active" id="vList">
 <div class="wrap">
   <div style="margin:0 0 14px;display:flex;gap:10px">
     <input type="search" id="searchHouse" placeholder="🔍 ค้นหาบ้านเลขที่ หรือ ชื่อ" style="flex:1">
@@ -204,6 +291,40 @@ input:focus{border-color:var(--green-line);box-shadow:0 0 0 3px var(--green-soft
   </div>
   <div id="board"><div class="spin"></div></div>
 </div>
+</div>
+
+<!-- ===== TAB: ผัง ===== -->
+<div class="adm-view" id="vMap" style="height:calc(100vh - 56px);">
+  <div class="map-body" id="mapBody">
+    <svg id="admin-svg" viewBox="0 0 1700 1300" width="100%" height="100%"></svg>
+  </div>
+  <div class="map-search">
+    <input type="search" id="mapSearch" placeholder="🔍 ค้นหาเลขแปลง เช่น 94, 33/94">
+    <div id="mapSugg" class="map-sugg"></div>
+  </div>
+  <div class="map-legend">
+    <div class="leg-row"><span class="leg-dot" style="background:#4ade80;border:1px solid #166534"></span>จ่ายแล้วเดือนนี้</div>
+    <div class="leg-row"><span class="leg-dot" style="background:#52525b;border:1px solid #3f3f46"></span>ยังไม่จ่าย</div>
+    <div class="leg-row"><span class="leg-dot" style="background:#1E293B;border:1px solid rgba(255,255,255,.15)"></span>ไม่มีในระบบ</div>
+  </div>
+  <div class="map-ctrls">
+    <button class="mc-btn" id="mzIn" title="ขยาย">＋</button>
+    <button class="mc-btn" id="mzOut" title="ย่อ">－</button>
+    <button class="mc-btn" id="mzFit" title="จัดหน้าจอ">⛶</button>
+  </div>
+</div>
+<div class="map-tt" id="mapTt"></div>
+
+<!-- ===== TABBAR ===== -->
+<div class="adm-tabbar" id="admTabbar">
+  <button class="adm-tab active" data-view="vList">
+    <svg viewBox="0 0 24 24"><rect x="3" y="5" width="7" height="7" rx="1"/><rect x="14" y="5" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    รายการ
+  </button>
+  <button class="adm-tab" data-view="vMap">
+    <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>
+    ผังหมู่บ้าน
+  </button>
 </div>
 
 <!-- slip modal -->
@@ -355,6 +476,7 @@ function fileToDataUrl(file,maxW=1280,q=0.82){return new Promise((res,rej)=>{
 
 const board=document.getElementById('board');
 let currentHouse=null, currentName=null, currentSoi=null;
+let lastHouses=[];
 
 async function loadBoard(){
   if(!API.url()){board.innerHTML='<div class="empty">ยังไม่ได้ใส่ URL ของ API ในโค้ด<br>(แก้ค่า API_URL ในไฟล์ admin.html)</div>';return;}
@@ -362,6 +484,7 @@ async function loadBoard(){
   try{
     const r=await API.get({action:'getHouses'});
     const houses=r.houses||[];
+    lastHouses=houses;  // cache for map sync
     const month=r.month||'';
     document.getElementById('sub').textContent=(month?('เดือน '+month+' · '):'')+'ลงทะเบียน '+houses.length+' หลัง';
     if(!houses.length){board.innerHTML='<div class="empty">'+`<svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8"/></svg>`+'<div>ยังไม่มีผู้ใช้ลงทะเบียน</div></div>';return;}
@@ -371,6 +494,7 @@ async function loadBoard(){
         <span class="info"><span class="h">บ้านเลขที่ ${h.house}</span><span class="n">${h.soi?('ซ.'+h.soi+' · '):''}${h.name||'-'}${h.nickname?(' ('+h.nickname+')'):''}</span></span>
       </button>`).join('')+'</div>';
     applyHouseFilter();
+    if(mapInited) syncMapWithHouses(houses);
   }catch(e){board.innerHTML='<div class="empty">โหลดไม่สำเร็จ<br>'+e.message+'</div>';}
 }
 
@@ -531,7 +655,9 @@ document.getElementById('searchHouse').addEventListener('input',applyHouseFilter
 // ====== ระบบล็อกอิน ======
 const gate=document.getElementById('gate'),app=document.getElementById('app');
 function getToken(){return sessionStorage.getItem('rp4_admin_token')||'';}
-function enterApp(){gate.style.display='none';app.style.display='block';loadBoard();}
+function enterApp(){gate.style.display='none';app.style.display='block';
+  document.getElementById('admTabbar').style.display='flex';
+  loadBoard();}
 function needRelogin(){sessionStorage.removeItem('rp4_admin_token');app.style.display='none';gate.style.display='flex';
   const m=document.getElementById('gateMsg');m.style.color='#b3261e';m.textContent='เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่';}
 
@@ -585,5 +711,297 @@ document.getElementById('pwdSave').onclick=async()=>{
 
 // ====== เริ่มต้น: ถ้ามี token ในเซสชันนี้ ข้ามหน้ารหัสผ่าน ======
 if(getToken()) enterApp();
+
+// ================================================================
+//  TAB SWITCHING (รายการ / ผัง)
+// ================================================================
+let mapInited=false;
+function switchAdmTab(viewId){
+  document.querySelectorAll('.adm-view').forEach(v=>v.classList.toggle('active',v.id===viewId));
+  document.querySelectorAll('.adm-tab').forEach(b=>b.classList.toggle('active',b.dataset.view===viewId));
+  if(viewId==='vMap'){
+    document.querySelector('#vMap').style.height=(window.innerHeight-56-56)+'px';
+    if(!mapInited){initAdminMap();mapInited=true;}
+    else syncMapWithHouses(lastHouses);
+    // re-sync หลัง loadBoard JSONP กลับมา (เผื่อ async ยังไม่เสร็จ)
+    setTimeout(()=>syncMapWithHouses(lastHouses), 800);
+  }
+}
+document.querySelectorAll('.adm-tab').forEach(b=>b.onclick=()=>switchAdmTab(b.dataset.view));
+function showAdminTabbar(){document.getElementById('admTabbar').style.display='flex';}
+
+
+// ================================================================
+//  MAP ENGINE
+// ================================================================
+const plotData=[
+    ...[
+        {num:"ด 202",type:"บ้านเดี่ยว",side:"ทิศเหนือ",lane:"ซอย 8"},{num:"ด 200",type:"บ้านเดี่ยว",side:"ทิศเหนือ",lane:"ซอย 8"},
+        {num:"166",type:"ทาวน์เฮ้าส์",side:"ทิศเหนือ",lane:"ซอย 8"},{num:"164",type:"ทาวน์เฮ้าส์",side:"ทิศเหนือ",lane:"ซอย 8"},
+        {num:"162",type:"ทาวน์เฮ้าส์",side:"ทิศเหนือ",lane:"ซอย 8"},{num:"160",type:"ทาวน์เฮ้าส์",side:"ทิศเหนือ",lane:"ซอย 8"},
+        {num:"158",type:"ทาวน์เฮ้าส์",side:"ทิศเหนือ",lane:"ซอย 8"},{num:"156",type:"ทาวน์เฮ้าส์",side:"ทิศเหนือ",lane:"ซอย 8"},
+        {num:"154",type:"ทาวน์เฮ้าส์",side:"ทิศเหนือ",lane:"ซอย 8"},{num:"152",type:"ทาวน์เฮ้าส์",side:"ทิศเหนือ",lane:"ซอย 8"},
+        {num:"150",type:"ทาวน์เฮ้าส์",side:"ทิศเหนือ",lane:"ซอย 8"},{num:"148",type:"ทาวน์เฮ้าส์",side:"ทิศเหนือ",lane:"ซอย 8"},
+        {num:"146",type:"ทาวน์เฮ้าส์",side:"ทิศเหนือ",lane:"ซอย 8"},{num:"144",type:"ทาวน์เฮ้าส์",side:"ทิศเหนือ",lane:"ซอย 8"},
+        {num:"142",type:"ทาวน์เฮ้าส์",side:"ทิศเหนือ",lane:"ซอย 8"},{num:"140",type:"ทาวน์เฮ้าส์",side:"ทิศเหนือ",lane:"ซอย 8"},
+        {num:"138",type:"ทาวน์เฮ้าส์",side:"ทิศเหนือ",lane:"ซอย 8"},{num:"136",type:"ทาวน์เฮ้าส์",side:"ทิศเหนือ",lane:"ซอย 8"},
+        {num:"134",type:"ทาวน์เฮ้าส์",side:"ทิศเหนือ",lane:"ซอย 8"},{num:"132",type:"ทาวน์เฮ้าส์",side:"ทิศเหนือ",lane:"ซอย 8"},
+        {num:"130",type:"ทาวน์เฮ้าส์",side:"ทิศเหนือ",lane:"ซอย 8"},{num:"128",type:"ทาวน์เฮ้าส์",side:"ทิศเหนือ",lane:"ซอย 8"}
+    ].map((it,i,a)=>({...it,id:`plot-b1-l-${i}`,block:"A",x:127,y:140+i*(418/a.length),w:103,h:418/a.length,role:"lane-even"})),
+    ...[
+        {num:"ด 210"},{num:"ด 208"},{num:"ด 206"},{num:"ด 204"},
+        {num:"126"},{num:"124"},{num:"122"},{num:"120"},{num:"118"},{num:"116"},
+        {num:"114"},{num:"112"},{num:"110"},{num:"108"},{num:"106"},{num:"104"},{num:"102"},{num:"100"}
+    ].map((it,i,a)=>({...it,type:"บ้านเดี่ยว/ทาวน์เฮ้าส์",id:`plot-b1-r-${i}`,block:"A",x:230,y:140+i*(418/a.length),w:103,h:418/a.length,role:"lane-even"})),
+    ...[
+        {num:"ด 218"},{num:"ด 216"},{num:"ด 214"},{num:"ด 212"},
+        {num:"98"},{num:"96"},{num:"94"},{num:"92"},{num:"90"},{num:"88"},
+        {num:"86"},{num:"84"},{num:"82"},{num:"80"},{num:"78"},{num:"76"},{num:"74"},{num:"72"}
+    ].map((it,i,a)=>({...it,type:"บ้านเดี่ยว/ทาวน์เฮ้าส์",id:`plot-b2-l-${i}`,block:"B",x:387,y:140+i*(418/a.length),w:133,h:418/a.length,role:"lane-even"})),
+    ...[
+        {num:"ด 226"},{num:"ด 224"},{num:"ด 222"},{num:"ด 220"},
+        {num:"70"},{num:"68"},{num:"66"},{num:"64"},{num:"62"},{num:"60"},
+        {num:"58"},{num:"56"},{num:"54"},{num:"52"},{num:"50"},{num:"48"},{num:"46"},{num:"44"}
+    ].map((it,i,a)=>({...it,type:"บ้านเดี่ยว/ทาวน์เฮ้าส์",id:`plot-b2-r-${i}`,block:"B",x:520,y:140+i*(418/a.length),w:133,h:418/a.length,role:"lane-even"})),
+    ...[{num:"ด 244"},{num:"ด 242"},{num:"ด 240"},{num:"ด 238"},{num:"ด 236"}]
+        .map((it,i,a)=>({...it,type:"บ้านเดี่ยว",id:`plot-b3-tl-${i}`,block:"C",x:707,y:140+i*(120/a.length),w:153,h:120/a.length,role:"lane-even"})),
+    ...[{num:"ด 254"},{num:"ด 252"},{num:"ด 250"},{num:"ด 248"},{num:"ด 246"}]
+        .map((it,i,a)=>({...it,type:"บ้านเดี่ยว",id:`plot-b3-tr-${i}`,block:"C",x:860,y:140+i*(120/a.length),w:153,h:120/a.length,role:"lane-even"})),
+    ...[["228",0],["230",1],["232",2],["234",3]].map(([n,i])=>({num:n,id:`plot-b3-r228-${n}`,type:"ทาวน์เฮ้าส์",x:707+i*76.5,y:290,w:76.5,h:40,role:"lane-even"})),
+    ...[["42",0],["40",1],["38",2],["36",3],["34",4],["32",5]].map(([n,i])=>({num:n,id:`plot-b3-r42-${n}`,type:"ทาวน์เฮ้าส์",x:707+i*51,y:330,w:51,h:40,role:"lane-even"})),
+    ...[["30",0],["28",1],["26",2],["24",3],["22",4],["20",5]].map(([n,i])=>({num:n,id:`plot-b3-r30-${n}`,type:"ทาวน์เฮ้าส์",x:707+i*51,y:400,w:51,h:40,role:"lane-even"})),
+    ...[["ด 12",0],["ด 14",1],["ด 16",2],["ด 18",3]].map(([n,i])=>({num:n,id:`plot-b3-rd12-${n}`,type:"บ้านเดี่ยว",x:707+i*76.5,y:440,w:76.5,h:40,role:"lane-even"})),
+    ...["168","170","172","174","176","178","180","182","184","186","188","190","192","194","196"]
+        .map((n,i)=>({num:n,id:`plot-b4-${i}`,type:"ทาวน์เฮ้าส์",x:1067+i*32,y:498,w:32,h:60,role:"lane-even"})),
+    ...[{num:"105"},{num:"141"},{num:"107"},{num:"111"},{num:"113"},{num:"115"},{num:"117"},{num:"119"},
+        {num:"121"},{num:"123"},{num:"125"},{num:"127"},{num:"129"},{num:"131"},{num:"133"},{num:"135"},{num:"137"}]
+        .map((it,i,a)=>({...it,type:"บ้านเดี่ยว/ทาวน์เฮ้าส์",id:`plot-b5-l-${i}`,x:127,y:642+i*(478/a.length),w:103,h:478/a.length,role:"lane-odd"})),
+    ...[{num:"81"},{num:"83"},{num:"85"},{num:"87"},{num:"89"},{num:"91"},
+        {num:"93"},{num:"95"},{num:"97"},{num:"99"},{num:"101"},{num:"103"}]
+        .map((it,i,a)=>({...it,type:"ทาวน์เฮ้าส์",id:`plot-b5-r-${i}`,x:230,y:642+i*(340/a.length),w:103,h:340/a.length,role:"lane-odd"})),
+    ...["57","59","61","63","65","67","69","71","73","75","77","79"]
+        .map((n,i,a)=>({num:n,id:`plot-b6-l-${i}`,type:"ทาวน์เฮ้าส์",x:387,y:642+i*(478/a.length),w:133,h:478/a.length,role:"lane-odd"})),
+    ...["33","35","37","39","41","43","45","47","49","51","53","55"]
+        .map((n,i,a)=>({num:n,id:`plot-b6-r-${i}`,type:"ทาวน์เฮ้าส์",x:520,y:642+i*(478/a.length),w:133,h:478/a.length,role:"lane-odd"})),
+    {num:"ด 33/13",id:"plot-b7-r1-l",type:"บ้านเดี่ยว",x:707,y:642,w:102,h:50,role:"lane-odd"},
+    {num:"ด 33/11",id:"plot-b7-r1-m",type:"บ้านเดี่ยว",x:809,y:642,w:102,h:50,role:"lane-odd"},
+    {num:"ด 33/9",id:"plot-b7-r1-r",type:"บ้านเดี่ยว",x:911,y:642,w:102,h:50,role:"lane-odd"},
+    {num:"ด 33/19",id:"plot-b7-r2-l",type:"บ้านเดี่ยว",x:707,y:692,w:102,h:50,role:"lane-odd"},
+    {num:"ด 33/17",id:"plot-b7-r2-m",type:"บ้านเดี่ยว",x:809,y:692,w:102,h:50,role:"lane-odd"},
+    {num:"ด 33/15",id:"plot-b7-r2-r",type:"บ้านเดี่ยว",x:911,y:692,w:102,h:50,role:"lane-odd"},
+    {num:"ด 33/25",id:"plot-b7-r3-l",type:"บ้านเดี่ยว",x:707,y:772,w:102,h:100,role:"lane-odd"},
+    {num:"ด 33/23",id:"plot-b7-r3-m",type:"บ้านเดี่ยว",x:809,y:772,w:102,h:100,role:"lane-odd"},
+    {num:"ด 33/21",id:"plot-b7-r3-r",type:"บ้านเดี่ยว",x:911,y:772,w:102,h:100,role:"lane-odd"},
+    {num:"ด 33/27",id:"plot-b7-s1",type:"บ้านเดี่ยว",x:707,y:877,w:306,h:50,role:"lane-odd"},
+    {num:"ด 33/29",id:"plot-b7-s2",type:"บ้านเดี่ยว",x:707,y:927,w:306,h:50,role:"lane-odd"},
+    {num:"ด 33/31",id:"plot-b7-s3",type:"บ้านเดี่ยว",x:707,y:977,w:306,h:50,role:"lane-odd"},
+    ...["151","153","155","157","159","161","163","165","167"]
+        .map((n,i)=>({num:n,id:`plot-b8-t-${i}`,type:"ทาวน์เฮ้าส์",x:1067+i*(276/9),y:642,w:276/9,h:60,role:"lane-odd"})),
+    ...["ด 173","ด 175","ด 177","ด 179","ด 181","ด 183","ด 185"]
+        .map((n,i)=>({num:n,id:`plot-b8-b-${i}`,type:"ทาวน์เฮ้าส์",x:1067+i*(276/7),y:702,w:276/7,h:100,role:"lane-odd"})),
+    {num:"ด 33/191",id:"plot-b8-big",type:"ที่ดินส่วนบุคคล",x:1067,y:820,w:276,h:120,role:"lane-odd"}
+];
+
+const NS="http://www.w3.org/2000/svg";
+function mkEl(tag,attrs){const e=document.createElementNS(NS,tag);Object.entries(attrs||{}).forEach(([k,v])=>e.setAttribute(k,v));return e;}
+
+function initAdminMap(){
+    const svg=document.getElementById('admin-svg');
+    svg.innerHTML=`<defs><pattern id="agrid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0L0 0 0 40" fill="none" stroke="var(--map-grid)" stroke-width="1"/></pattern></defs>
+<rect width="1700" height="1300" fill="url(#agrid)"/>`;
+    // roads
+    const rg=mkEl('g');rg.id='aroads';svg.appendChild(rg);
+    rg.appendChild(Object.assign(mkEl('rect',{x:40,y:560,width:1620,height:80,class:'svg-main-road'})));
+    rg.appendChild(Object.assign(mkEl('rect',{x:40,y:560,width:1620,height:80,class:'svg-main-road-highlight'})));
+    const cl=mkEl('line',{x1:40,y1:600,x2:1660,y2:600,stroke:'rgba(255,255,255,.2)','stroke-width':2,'stroke-dasharray':'15,10'});rg.appendChild(cl);
+    const alleys=[
+        {name:"ซอย 8",x:100,y1:140,y2:560},{name:"ซอย 6",x:360,y1:140,y2:560},{name:"ซอย 4",x:680,y1:140,y2:560},{name:"ซอย 2",x:1040,y1:140,y2:560},
+        {name:"ซอย 8",x:100,y1:640,y2:1120},{name:"ซอย 6",x:360,y1:640,y2:1120},{name:"ซอย 4",x:680,y1:640,y2:1180},{name:"ซอย 2",x:1040,y1:640,y2:1180},{name:"ซอย 1",x:1370,y1:640,y2:1120}
+    ];
+    alleys.forEach(a=>{
+        rg.appendChild(mkEl('rect',{x:a.x-25,y:a.y1,width:50,height:a.y2-a.y1,class:'svg-road'}));
+        const t=mkEl('text',{x:a.x,y:a.y1+(a.y2-a.y1)/2,class:'sub-road-label',transform:`rotate(-90,${a.x},${a.y1+(a.y2-a.y1)/2})`});t.textContent=a.name;rg.appendChild(t);
+    });
+    [{name:"ซอย 4/2",x:707,y:260,w:306,h:30},{name:"ซอย 4/1",x:707,y:370,w:306,h:30},{name:"ซอย 2/1",x:707,y:480,w:306,h:10},{name:"ซอย 5/1",x:707,y:742,w:306,h:30}].forEach(a=>{
+        rg.appendChild(mkEl('rect',{x:a.x,y:a.y,width:a.w,height:a.h,class:'svg-road'}));
+        if(a.h>=30){const t=mkEl('text',{x:a.x+a.w/2,y:a.y+a.h/2,class:'sub-road-label','dominant-baseline':'middle'});t.textContent=a.name;rg.appendChild(t);}
+    });
+    // playground
+    const pg=mkEl('g');pg.id='apg';svg.appendChild(pg);
+    const pr=mkEl('rect',{x:707,y:490,width:306,height:68,fill:'#064E3B',stroke:'#10B981','stroke-width':2,rx:6});pg.appendChild(pr);
+    const pt=mkEl('text',{x:860,y:524,fill:'#A7F3D0','font-size':'14px','font-weight':'bold','text-anchor':'middle'});pt.textContent='สนามเด็กเล่น';pg.appendChild(pt);
+    // labels
+    const lg=mkEl('g');svg.appendChild(lg);
+    const rl1=mkEl('text',{x:480,y:606,class:'road-label'});rl1.textContent='ถนนเมนคอนกรีต คสล. กว้าง 10 เมตร';lg.appendChild(rl1);
+    const rl2=mkEl('text',{x:1210,y:606,class:'road-label'});rl2.textContent='ซอยเพชรเกษม 33';lg.appendChild(rl2);
+    // arrows
+    function arr(p,x,y,d){const ar=mkEl('polygon',{class:'road-arrow'});ar.setAttribute('points',d==='left'?`${x},${y} ${x+12},${y-8} ${x+12},${y-3} ${x+35},${y-3} ${x+35},${y+3} ${x+12},${y+3} ${x+12},${y+8}`:`${x},${y} ${x-12},${y-8} ${x-12},${y-3} ${x-35},${y-3} ${x-35},${y+3} ${x-12},${y+3} ${x-12},${y+8}`);p.appendChild(ar);}
+    arr(lg,380,600,'left');arr(lg,1420,600,'right');
+    const pa=mkEl('text',{x:1310,y:280,class:'text-annotation',style:'font-size:20px;font-weight:bold'});pa.textContent='ที่สาธารณะ';lg.appendChild(pa);
+    // plots
+    const plotsGrp=mkEl('g');plotsGrp.id='aplots';svg.appendChild(plotsGrp);
+    plotData.forEach(p=>{
+        const g=mkEl('g');g.setAttribute('class',`svg-plot ${p.role||''}`);g.id='mp-'+p.id;g.dataset.num=p.num;
+        const r=mkEl('rect',{x:p.x,y:p.y,width:p.w,height:p.h,rx:2});g.appendChild(r);
+        const t=mkEl('text',{x:p.x+p.w/2,y:p.y+p.h/2});
+        if(p.num&&p.num.length>5)t.setAttribute('style','font-size:8px');
+        else if(p.num&&p.num.length>3)t.setAttribute('style','font-size:9px');
+        t.textContent=p.num||'';g.appendChild(t);
+        plotsGrp.appendChild(g);
+        // hover tooltip
+        g.addEventListener('mouseenter',e=>{
+            const tt=document.getElementById('mapTt');
+            tt.textContent='บ้านเลขที่ '+p.num;tt.classList.add('show');
+        });
+        g.addEventListener('mousemove',e=>{
+            const tt=document.getElementById('mapTt');
+            tt.style.left=(e.clientX+14)+'px';tt.style.top=(e.clientY+14)+'px';
+        });
+        g.addEventListener('mouseleave',()=>document.getElementById('mapTt').classList.remove('show'));
+        // click → lookup house data (รองรับ "33/94" vs "94")
+        g.addEventListener('click',()=>{
+            const hData=lastHouses.find(h=>numMatch(h.house,p.num));
+            if(!hData){toast('บ้านเลขที่ '+p.num+' ยังไม่ได้ลงทะเบียน',true);return;}
+            currentHouse=hData.house;currentName=hData.name;currentSoi=hData.soi||'';
+            document.querySelectorAll('.svg-plot.map-active').forEach(e=>e.classList.remove('map-active'));
+            g.classList.add('map-active');
+            openModal('บ้านเลขที่ '+hData.house+(hData.name?' · '+hData.name:''));
+            API.get({action:'getSlips',house:hData.house}).then(r=>{
+                const list=r.slips||[];
+                if(!list.length){mBody.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8"/></svg><div>ยังไม่มีสลิปสำหรับบ้านหลังนี้</div></div>';return;}
+                mBody.innerHTML='<div class="slip-grid">'+list.map(s=>`<div class="slip-wrap"><button class="slip-del" data-fileid="${s.fileId}" aria-label="ลบสลิป"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0-1 14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1L4 6h16Z"/><path d="M10 11v6M14 11v6"/></svg></button><a class="slip" href="https://drive.google.com/file/d/${s.fileId}/view" target="_blank" rel="noopener"><img class="thumb" src="${s.url}" loading="lazy" alt="สลิป"><div class="meta"><b>${s.name||'-'}${s.nickname?(' ('+s.nickname+')'):''}</b>${fmtTime(s.time)}</div></a></div>`).join('')+'</div>';
+            }).catch(err=>{mBody.innerHTML='<div class="empty">โหลดไม่สำเร็จ<br>'+err.message+'</div>';});
+        });
+    });
+    // sync after all elements are in DOM
+    requestAnimationFrame(()=>syncMapWithHouses(lastHouses));
+}
+
+// ฟังก์ชัน helper: strip prefix เช่น "33/94" → "94", "ด 33/94" → "94"
+function stripNum(s){return String(s||'').replace(/^ด\s*/,'').replace(/^\d+\//,'').trim();}
+// ตรวจว่า houseNum ตรงกับ plotNum ไหม (รองรับ "33/94" vs "94")
+function numMatch(houseNum,plotNum){
+    const h=String(houseNum||'').trim(), p=String(plotNum||'').trim();
+    return h===p || stripNum(h)===p || h===stripNum(p) || stripNum(h)===stripNum(p);
+}
+// ซูมไปโฟกัสที่แปลงนั้น
+function focusMapPlot(plot){
+    const rect=mapBody.getBoundingClientRect();
+    const cx=plot.x+plot.w/2, cy=plot.y+plot.h/2;
+    const scale=Math.min(3.0, Math.max(2.0, 800/plot.w));
+    mz.zoom=scale;mz.panX=rect.width/2-cx*scale;mz.panY=rect.height/2-cy*scale;
+    applyMT();
+    document.querySelectorAll('.svg-plot.map-active').forEach(e=>e.classList.remove('map-active'));
+    const el=document.getElementById('mp-'+plot.id);
+    if(el){el.classList.add('map-active');
+        // flash effect
+        el.style.transition='opacity .15s';el.style.opacity='.3';
+        setTimeout(()=>{el.style.opacity='1';},150);
+    }
+}
+
+// sync plot colors from house data
+function syncMapWithHouses(houses){
+    const paidSet=new Set(),regSet=new Set();
+    (houses||[]).forEach(h=>{
+        const key=stripNum(h.house);
+        regSet.add(h.house);regSet.add(key);
+        if(h.slips>0){paidSet.add(h.house);paidSet.add(key);}
+    });
+    plotData.forEach(p=>{
+        const el=document.getElementById('mp-'+p.id);if(!el)return;
+        el.classList.remove('map-paid','map-unpaid');
+        if(paidSet.has(p.num)||paidSet.has(stripNum(p.num)))el.classList.add('map-paid');
+        else if(regSet.has(p.num)||regSet.has(stripNum(p.num)))el.classList.add('map-unpaid');
+    });
+}
+
+// MAP zoom/pan
+const mapBody=document.getElementById('mapBody');
+const adminSvg=document.getElementById('admin-svg');
+let mz={zoom:1,panX:0,panY:0,drag:false,sx:0,sy:0};
+function applyMT(){adminSvg.style.transform=`translate(${mz.panX}px,${mz.panY}px) scale(${mz.zoom})`;}
+function fitMap(){
+    const r=mapBody.getBoundingClientRect();
+    const sc=Math.min(r.width/1700,r.height/1300,1)*.92;
+    mz.zoom=sc;mz.panX=(r.width-1700*sc)/2;mz.panY=(r.height-1300*sc)/2;applyMT();
+}
+document.getElementById('mzIn').onclick=()=>{mz.zoom=Math.min(mz.zoom+.25,4);applyMT();};
+document.getElementById('mzOut').onclick=()=>{mz.zoom=Math.max(mz.zoom-.25,.2);applyMT();};
+document.getElementById('mzFit').onclick=fitMap;
+mapBody.addEventListener('mousedown',e=>{if(e.button!==0)return;mz.drag=true;mz.sx=e.clientX-mz.panX;mz.sy=e.clientY-mz.panY;mapBody.style.cursor='grabbing';});
+window.addEventListener('mousemove',e=>{if(!mz.drag)return;mz.panX=e.clientX-mz.sx;mz.panY=e.clientY-mz.sy;applyMT();});
+window.addEventListener('mouseup',()=>{if(mz.drag){mz.drag=false;mapBody.style.cursor='grab';}});
+mapBody.addEventListener('wheel',e=>{
+    e.preventDefault();const r=mapBody.getBoundingClientRect();
+    const mx=e.clientX-r.left,my=e.clientY-r.top;
+    const sx=(mx-mz.panX)/mz.zoom,sy=(my-mz.panY)/mz.zoom;
+    const f=1.1;mz.zoom=e.deltaY<0?Math.min(mz.zoom*f,4):Math.max(mz.zoom/f,.2);
+    mz.panX=mx-sx*mz.zoom;mz.panY=my-sy*mz.zoom;applyMT();
+},{passive:false});
+// touch pan
+mapBody.addEventListener('touchstart',e=>{if(e.touches.length===1){const t=e.touches[0];mz.drag=true;mz.sx=t.clientX-mz.panX;mz.sy=t.clientY-mz.panY;}},{passive:true});
+mapBody.addEventListener('touchmove',e=>{if(mz.drag&&e.touches.length===1){e.preventDefault();const t=e.touches[0];mz.panX=t.clientX-mz.sx;mz.panY=t.clientY-mz.sy;applyMT();}},{passive:false});
+mapBody.addEventListener('touchend',()=>{mz.drag=false;});
+// resize
+window.addEventListener('resize',()=>{if(document.getElementById('vMap').classList.contains('active'))fitMap();});
+
+// ================================================================
+//  MAP SEARCH
+// ================================================================
+const mapSearch=document.getElementById('mapSearch');
+const mapSugg=document.getElementById('mapSugg');
+
+function buildSuggItem(p){
+    const hData=lastHouses.find(h=>numMatch(h.house,p.num));
+    const cls=hData?(hData.slips>0?'si-paid':'si-unpaid'):'si-none';
+    const meta=hData?(hData.name+(hData.soi?' · ซ.'+hData.soi:'')):'ไม่มีในระบบ';
+    return `<div class="map-si ${cls}" data-id="${p.id}">
+        <span class="si-num">บ้านเลขที่ ${p.num}</span>
+        <span class="si-meta">${meta}</span>
+    </div>`;
+}
+
+function showSugg(val){
+    val=val.trim().toLowerCase();
+    if(!val){mapSugg.classList.remove('show');return;}
+    const matches=plotData.filter(p=>
+        p.num.toLowerCase().includes(val)||
+        stripNum(p.num).toLowerCase().includes(val)||
+        (p.lane||'').toLowerCase().includes(val)
+    ).slice(0,8);
+    if(!matches.length){
+        mapSugg.innerHTML='<div class="map-si si-none"><span class="si-num">ไม่พบเลขแปลงนี้</span></div>';
+    } else {
+        mapSugg.innerHTML=matches.map(buildSuggItem).join('');
+        mapSugg.querySelectorAll('.map-si[data-id]').forEach(item=>{
+            item.addEventListener('click',()=>{
+                const plot=plotData.find(p=>p.id===item.dataset.id);
+                if(!plot)return;
+                mapSearch.value=plot.num;
+                mapSugg.classList.remove('show');
+                // zoom & focus
+                focusMapPlot(plot);
+                // open modal if registered (short delay to let zoom animate)
+                setTimeout(()=>{
+                    const hData=lastHouses.find(h=>numMatch(h.house,plot.num));
+                    if(hData){
+                        currentHouse=hData.house;currentName=hData.name;currentSoi=hData.soi||'';
+                        openModal('บ้านเลขที่ '+hData.house+(hData.name?' · '+hData.name:''));
+                        API.get({action:'getSlips',house:hData.house}).then(r=>{
+                            const list=r.slips||[];
+                            if(!list.length){mBody.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8"/></svg><div>ยังไม่มีสลิปสำหรับบ้านหลังนี้</div></div>';return;}
+                            mBody.innerHTML='<div class="slip-grid">'+list.map(s=>`<div class="slip-wrap"><button class="slip-del" data-fileid="${s.fileId}"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0-1 14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1L4 6h16Z"/><path d="M10 11v6M14 11v6"/></svg></button><a class="slip" href="https://drive.google.com/file/d/${s.fileId}/view" target="_blank" rel="noopener"><img class="thumb" src="${s.url}" loading="lazy" alt="สลิป"><div class="meta"><b>${s.name||'-'}${s.nickname?(' ('+s.nickname+')'):''}</b>${fmtTime(s.time)}</div></a></div>`).join('')+'</div>';
+                        }).catch(err=>{mBody.innerHTML='<div class="empty">โหลดไม่สำเร็จ</div>';});
+                    }
+                },320);
+            });
+        });
+    }
+    mapSugg.classList.add('show');
+}
+mapSearch.addEventListener('input',e=>showSugg(e.target.value));
+mapSearch.addEventListener('keydown',e=>{if(e.key==='Escape'){mapSugg.classList.remove('show');mapSearch.value='';}});
+document.addEventListener('click',e=>{if(!e.target.closest('.map-search'))mapSugg.classList.remove('show');});
 </script>
 </body></html>
